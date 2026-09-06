@@ -1,0 +1,37 @@
+# Datasets — tracked by DVC, not git
+data/
+*.dvc
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+.env
+
+# ONNX model weights — too large for git
+ml/deploy/models/*.onnx
+
+# Next.js
+web/.next/
+web/node_modules/
+web/.env.local
+
+# MLflow
+mlruns/
+mlartifacts/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# DVC internal
+.dvc/tmp/

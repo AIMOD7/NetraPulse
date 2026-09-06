@@ -1,0 +1,38 @@
+services:
+  # -------------------------------------------------------------------------
+  # Orthanc — DICOM PACS
+  # Accessible at: http://localhost:8042
+  # Default credentials: orthanc / orthanc
+  # -------------------------------------------------------------------------
+  orthanc:
+    image: orthancteam/orthanc:latest
+    container_name: netrapulse_orthanc
+    ports:
+      - "8042:8042"
+      - "4242:4242"   # DICOM protocol port
+    volumes:
+      - orthanc_data:/var/lib/orthanc/db
+    environment:
+      ORTHANC__AUTHENTICATION_ENABLED: "true"
+    restart: unless-stopped
+
+  # -------------------------------------------------------------------------
+  # HAPI FHIR — HL7 FHIR R4 server
+  # Accessible at: http://localhost:8080
+  # API base:      http://localhost:8080/fhir
+  # -------------------------------------------------------------------------
+  hapi-fhir:
+    image: hapiproject/hapi:latest
+    container_name: netrapulse_hapi_fhir
+    ports:
+      - "8080:8080"
+    environment:
+      hapi.fhir.fhir_version: R4
+      hapi.fhir.server_address: http://localhost:8080/fhir
+    volumes:
+      - hapi_data:/data/hapi
+    restart: unless-stopped
+
+volumes:
+  orthanc_data:
+  hapi_data:
