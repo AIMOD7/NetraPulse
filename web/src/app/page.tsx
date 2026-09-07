@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, useEffect } from "react";
 import {
   BarChart,
   Bar,
@@ -20,7 +20,10 @@ import {
   Activity,
   Microscope,
   Info,
+  Moon,
+  Sun,
 } from "lucide-react";
+import { useTheme } from "next-themes";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -66,9 +69,9 @@ const GRADE_DESCRIPTIONS = [
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="glass-card p-3 text-sm">
-        <p className="font-semibold text-white">{label}</p>
-        <p className="text-blue-400">{(payload[0].value * 100).toFixed(1)}%</p>
+      <div className="google-card p-3 text-sm">
+        <p className="font-medium text-[var(--text-primary)]">{label}</p>
+        <p className="text-[var(--accent)]">{(payload[0].value * 100).toFixed(1)}%</p>
       </div>
     );
   }
@@ -88,6 +91,10 @@ export default function HomePage() {
   const [loadingPredict, setLoadingPredict] = useState(false);
   const [loadingExplain, setLoadingExplain] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   // ---- File handling -------------------------------------------------------
   const handleFile = useCallback((file: File) => {
@@ -189,18 +196,27 @@ export default function HomePage() {
   return (
     <main className="relative min-h-screen z-10">
       {/* Header */}
-      <header className="border-b border-blue-900/30 px-6 py-4">
+      <header className="border-b border-[var(--border)] bg-[var(--bg-card)] px-6 py-3">
         <div className="max-w-6xl mx-auto flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-blue-600/20 border border-blue-500/30 flex items-center justify-center">
-            <Eye className="w-5 h-5 text-blue-400" />
+          <div className="w-10 h-10 rounded-full bg-[var(--accent)]/10 flex items-center justify-center">
+            <Eye className="w-5 h-5 text-[var(--accent)]" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-white tracking-tight">NetraPulse</h1>
-            <p className="text-xs text-slate-400">Diabetic Retinopathy Screening</p>
+            <h1 className="text-xl font-medium text-[var(--text-primary)] tracking-tight">NetraPulse</h1>
+            <p className="text-xs text-[var(--text-muted)]">Diabetic Retinopathy Screening</p>
           </div>
-          <div className="ml-auto flex items-center gap-2 text-xs text-slate-500">
-            <Activity className="w-3.5 h-3.5" />
-            <span>ResNet50 · ONNX · Grad-CAM</span>
+          <div className="ml-auto flex items-center gap-2 text-xs text-[var(--text-muted)]">
+            <Activity className="w-4 h-4" />
+            <span className="hidden sm:inline">ResNet50 · ONNX · Grad-CAM</span>
+            {mounted && (
+              <button
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                className="ml-4 p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                aria-label="Toggle dark mode"
+              >
+                {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -209,10 +225,10 @@ export default function HomePage() {
         {/* Top row: Upload + Preview */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Upload panel */}
-          <div className="glass-card p-6 space-y-4">
+          <div className="google-card p-6 space-y-4">
             <div className="flex items-center gap-2 mb-2">
-              <Upload className="w-4 h-4 text-blue-400" />
-              <h2 className="font-semibold text-white">Upload Fundus Image</h2>
+              <Upload className="w-5 h-5 text-[var(--text-primary)] opacity-70" />
+              <h2 className="font-medium text-[var(--text-primary)] text-lg">Upload Fundus Image</h2>
             </div>
 
             <div
@@ -225,12 +241,12 @@ export default function HomePage() {
               onDragLeave={() => setDragActive(false)}
               onDrop={onDrop}
             >
-              <ImageIcon className="w-10 h-10 text-blue-400/50" />
+              <ImageIcon className="w-10 h-10 text-[var(--text-muted)] opacity-50" />
               <div>
-                <p className="text-slate-300 font-medium">
+                <p className="text-[var(--text-primary)] opacity-90 font-medium">
                   Drag & drop or click to select
                 </p>
-                <p className="text-slate-500 text-sm mt-1">PNG, JPEG · Fundus photograph</p>
+                <p className="text-[var(--text-muted)] text-sm mt-1">PNG, JPEG · Fundus photograph</p>
               </div>
               <input
                 id="file-input"
@@ -243,7 +259,7 @@ export default function HomePage() {
             </div>
 
             {selectedFile && (
-              <p className="text-sm text-slate-400 truncate">
+              <p className="text-sm text-[var(--text-muted)] truncate">
                 📎 {selectedFile.name} ({(selectedFile.size / 1024).toFixed(0)} KB)
               </p>
             )}
@@ -252,7 +268,7 @@ export default function HomePage() {
               id="analyze-btn"
               onClick={runPredict}
               disabled={!selectedFile || loadingPredict}
-              className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold transition-all flex items-center justify-center gap-2"
+              className="w-full py-2.5 rounded-full bg-[var(--accent)] hover:opacity-90 shadow-sm disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium transition-all flex items-center justify-center gap-2"
             >
               {loadingPredict ? (
                 <>
@@ -268,7 +284,7 @@ export default function HomePage() {
             </button>
 
             {error && (
-              <div className="flex items-start gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm fade-in">
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-sm fade-in">
                 <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
                 <span>{error}</span>
               </div>
@@ -276,20 +292,20 @@ export default function HomePage() {
           </div>
 
           {/* Preview panel */}
-          <div className="glass-card p-6">
-            <h2 className="font-semibold text-white mb-4 flex items-center gap-2">
-              <ImageIcon className="w-4 h-4 text-blue-400" />
+          <div className="google-card p-6">
+            <h2 className="font-medium text-[var(--text-primary)] text-lg mb-4 flex items-center gap-2">
+              <ImageIcon className="w-5 h-5 text-[var(--text-primary)] opacity-70" />
               Image Preview
             </h2>
             {previewUrl ? (
               <img
                 src={previewUrl}
                 alt="Uploaded fundus"
-                className="w-full rounded-xl object-cover max-h-64 border border-blue-900/30"
+                className="w-full rounded-lg object-cover max-h-64 border border-[var(--border)]"
               />
             ) : (
-              <div className="h-48 rounded-xl border border-dashed border-slate-700 flex items-center justify-center">
-                <p className="text-slate-600 text-sm">No image selected</p>
+              <div className="h-48 rounded-lg border border-dashed border-[var(--border)] flex items-center justify-center bg-[var(--bg-primary)]">
+                <p className="text-[var(--text-muted)] text-sm">No image selected</p>
               </div>
             )}
           </div>
@@ -299,22 +315,22 @@ export default function HomePage() {
         {prediction && (
           <div className="space-y-6 fade-in">
             {/* Grade card */}
-            <div className="glass-card p-6">
+            <div className="google-card p-6">
               <div className="flex items-center gap-2 mb-4">
-                <CheckCircle2 className="w-4 h-4 text-green-400" />
-                <h2 className="font-semibold text-white">Classification Result</h2>
+                <CheckCircle2 className="w-5 h-5 text-green-500" />
+                <h2 className="font-medium text-[var(--text-primary)] text-lg">Classification Result</h2>
               </div>
 
               <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                 <div>
-                  <p className="text-slate-400 text-sm mb-2">DR Grade</p>
+                  <p className="text-[var(--text-muted)] text-xs uppercase tracking-wider mb-2 font-semibold">DR Grade</p>
                   <span className={`grade-badge grade-${prediction.grade}`}>
                     Grade {prediction.grade} — {prediction.label}
                   </span>
                 </div>
                 <div className="sm:ml-8">
-                  <p className="text-slate-400 text-sm mb-1">Clinical note</p>
-                  <p className="text-slate-300 text-sm">
+                  <p className="text-[var(--text-muted)] text-xs uppercase tracking-wider mb-1 font-semibold">Clinical note</p>
+                  <p className="text-[var(--text-primary)] opacity-90 text-sm">
                     {GRADE_DESCRIPTIONS[prediction.grade]}
                   </p>
                 </div>
@@ -322,26 +338,26 @@ export default function HomePage() {
             </div>
 
             {/* Confidence bar chart */}
-            <div className="glass-card p-6">
-              <h2 className="font-semibold text-white mb-4 flex items-center gap-2">
-                <Activity className="w-4 h-4 text-blue-400" />
+            <div className="google-card p-6">
+              <h2 className="font-medium text-[var(--text-primary)] text-lg mb-4 flex items-center gap-2">
+                <Activity className="w-5 h-5 text-[var(--text-primary)] opacity-70" />
                 Confidence Scores
               </h2>
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
                   <XAxis
                     dataKey="label"
-                    tick={{ fill: "#94a3b8", fontSize: 11 }}
+                    tick={{ fill: "var(--text-muted)", fontSize: 11 }}
                     axisLine={false}
                     tickLine={false}
                   />
                   <YAxis
                     tickFormatter={(v) => `${(v * 100).toFixed(0)}%`}
-                    tick={{ fill: "#94a3b8", fontSize: 11 }}
+                    tick={{ fill: "var(--text-muted)", fontSize: 11 }}
                     axisLine={false}
                     tickLine={false}
                   />
-                  <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
+                  <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(128,128,128,0.1)" }} />
                   <Bar dataKey="value" radius={[6, 6, 0, 0]}>
                     {chartData.map((entry, i) => (
                       <Cell key={i} fill={entry.color} fillOpacity={0.85} />
@@ -352,10 +368,10 @@ export default function HomePage() {
             </div>
 
             {/* Grad-CAM section */}
-            <div className="glass-card p-6">
+            <div className="google-card p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="font-semibold text-white flex items-center gap-2">
-                  <Eye className="w-4 h-4 text-blue-400" />
+                <h2 className="font-medium text-[var(--text-primary)] text-lg flex items-center gap-2">
+                  <Eye className="w-5 h-5 text-[var(--text-primary)] opacity-70" />
                   Grad-CAM Explanation
                 </h2>
                 {!heatmap && (
@@ -363,7 +379,7 @@ export default function HomePage() {
                     id="explain-btn"
                     onClick={runExplain}
                     disabled={loadingExplain}
-                    className="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 disabled:opacity-40 text-white text-sm font-medium transition-all flex items-center gap-2"
+                    className="px-4 py-2 rounded-full border border-[var(--border)] hover:bg-[var(--bg-primary)] disabled:opacity-40 text-[var(--text-primary)] opacity-90 text-sm font-medium transition-all flex items-center gap-2"
                   >
                     {loadingExplain ? (
                       <>
@@ -380,23 +396,23 @@ export default function HomePage() {
               {heatmap ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 fade-in">
                   <div>
-                    <p className="text-xs text-slate-500 mb-2 uppercase tracking-wider">Original</p>
-                    <img src={previewUrl!} alt="Original" className="w-full rounded-xl border border-blue-900/30 object-cover" />
+                    <p className="text-xs text-[var(--text-muted)] mb-2 uppercase tracking-wider font-semibold">Original</p>
+                    <img src={previewUrl!} alt="Original" className="w-full rounded-lg border border-[var(--border)] object-cover" />
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500 mb-2 uppercase tracking-wider">Grad-CAM Overlay</p>
+                    <p className="text-xs text-[var(--text-muted)] mb-2 uppercase tracking-wider font-semibold">Grad-CAM Overlay</p>
                     <img
                       src={`data:image/png;base64,${heatmap}`}
                       alt="Grad-CAM heatmap"
-                      className="w-full rounded-xl border border-blue-900/30 object-cover"
+                      className="w-full rounded-lg border border-[var(--border)] object-cover"
                     />
                   </div>
                 </div>
               ) : (
-                <div className="flex items-start gap-2 p-4 rounded-lg bg-blue-500/5 border border-blue-500/20 text-slate-400 text-sm">
-                  <Info className="w-4 h-4 mt-0.5 flex-shrink-0 text-blue-400" />
+                <div className="flex items-start gap-2 p-4 rounded-lg bg-[var(--accent)]/10 border border-[var(--accent)]/20 text-[var(--text-primary)] opacity-90 text-sm">
+                  <Info className="w-4 h-4 mt-0.5 flex-shrink-0 text-[var(--accent)]" />
                   <span>
-                    Click <strong className="text-slate-300">Generate Heatmap</strong> to visualize which retinal regions
+                    Click <strong className="text-[var(--text-primary)] font-semibold">Generate Heatmap</strong> to visualize which retinal regions
                     the model focused on. Uses Grad-CAM on ResNet50&apos;s last conv block.
                   </span>
                 </div>
@@ -406,7 +422,7 @@ export default function HomePage() {
         )}
 
         {/* Footer disclaimer */}
-        <p className="text-center text-xs text-slate-600 pb-6">
+        <p className="text-center text-xs text-[var(--text-muted)] pb-6 mt-4">
           NetraPulse is a research prototype — not a certified medical device.
           Always confirm findings with a qualified ophthalmologist.
         </p>

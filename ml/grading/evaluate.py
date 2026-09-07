@@ -16,6 +16,11 @@ The quadratic weighted kappa is the number we care about most:
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+# Add the project root to sys.path so 'import ml...' works from anywhere
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
 import argparse
 import io
 import logging
@@ -61,9 +66,9 @@ def _load_onnx_session(model_path: Path):
 
 def predict_single(session, image_bgr: np.ndarray) -> tuple[int, list[float]]:
     """Run inference on a single BGR image. Returns (grade, confidence_list)."""
-    from ml.data.preprocessing import preprocess_fundus
+    from ml.data.preprocessing import preprocess_already_cropped
 
-    processed = preprocess_fundus(image_bgr, img_size=512)
+    processed = preprocess_already_cropped(image_bgr, img_size=224)
     tensor = processed.astype(np.float32) / 255.0
     tensor = tensor.transpose(2, 0, 1)[np.newaxis, ...]  # NCHW
 
@@ -81,31 +86,42 @@ def predict_single(session, image_bgr: np.ndarray) -> tuple[int, list[float]]:
 # Dataset loading
 # ---------------------------------------------------------------------------
 
-def load_aptos_split(aptos_dir: Path, split: float = 0.2, seed: int = 42) -> pd.DataFrame:
+def load_dataset_split(data_dir: Path, labels_csv: Path, split: float = 0.2, seed: int = 42) -> pd.DataFrame:
     """
-    Load APTOS images + labels and return the held-out validation split.
-    """
-    labels_csv = aptos_dir / "train.csv"
-    images_dir = aptos_dir / "train_images"
+    Load images + labels and return the held-out validation split.
 
+    Supports two CSV formats:
+      - trainLabels.csv:         columns 'image', 'level'
+      - trainLabels_cropped.csv: columns '', 'Unnamed: 0', 'image', 'level'
+    """
     if not labels_csv.exists():
         raise FileNotFoundError(f"Labels not found: {labels_csv}")
-    if not images_dir.exists():
-        raise FileNotFoundError(f"Images dir not found: {images_dir}")
+    if not data_dir.exists():
+        raise FileNotFoundError(f"Images dir not found: {data_dir}")
 
     df = pd.read_csv(labels_csv)
-    df = df.rename(columns={"id_code": "image_id", "diagnosis": "label"})
+
+    # Normalise column names
+    if 'image' not in df.columns and 'id_code' in df.columns:
+        df = df.rename(columns={'id_code': 'image', 'diagnosis': 'level'})
+    df = df[['image', 'level']].copy()
 
     # Held-out split
     df = df.sample(frac=1, random_state=seed).reset_index(drop=True)
     n_val = int(len(df) * split)
     val_df = df.iloc[:n_val].copy()
-    val_df["image_path"] = val_df["image_id"].apply(
-        lambda x: str(images_dir / f"{x}.png")
-    )
-    # Keep only existing files
-    val_df = val_df[val_df["image_path"].apply(os.path.exists)].reset_index(drop=True)
-    logger.info(f"Validation set: {len(val_df)} images")
+
+    # Build full paths — try .jpeg first, then .png
+    def find_path(img_id: str) -> str | None:
+        for ext in ('.jpeg', '.jpg', '.png'):
+            p = data_dir / f"{img_id}{ext}"
+            if p.exists():
+                return str(p)
+        return None
+
+    val_df['image_path'] = val_df['image'].apply(find_path)
+    val_df = val_df[val_df['image_path'].notna()].reset_index(drop=True)
+    logger.info(f"Validation set: {len(val_df)} images from {data_dir.name}")
     return val_df
 
 
@@ -114,24 +130,25 @@ def load_aptos_split(aptos_dir: Path, split: float = 0.2, seed: int = 42) -> pd.
 # ---------------------------------------------------------------------------
 
 def evaluate(
-    aptos_dir: Path,
+    data_dir: Path,
+    labels_csv: Path,
     model_path: Path,
     split: float = 0.2,
     experiment_name: str = "netrapulse",
 ) -> dict[str, float]:
     session = _load_onnx_session(model_path)
-    val_df = load_aptos_split(aptos_dir, split=split)
+    val_df = load_dataset_split(data_dir, labels_csv, split=split)
 
     y_true: list[int] = []
     y_pred: list[int] = []
 
     for idx, row in val_df.iterrows():
-        img_bgr = cv2.imread(row["image_path"])
+        img_bgr = cv2.imread(row['image_path'])
         if img_bgr is None:
             logger.warning(f"Could not read: {row['image_path']}")
             continue
         grade, _ = predict_single(session, img_bgr)
-        y_true.append(int(row["label"]))
+        y_true.append(int(row['level']))
         y_pred.append(grade)
 
         if (idx + 1) % 50 == 0:
@@ -184,17 +201,22 @@ def evaluate(
 
 def main() -> None:
     repo_root = Path(__file__).resolve().parents[2]
-    default_data = repo_root / "data" / "aptos"
-    default_model = repo_root / "ml" / "deploy" / "models" / "netrapulse_resnet50.onnx"
+    # Default: use local resized_train_cropped + trainLabels.csv
+    default_data    = repo_root / "resized_train_cropped"
+    default_labels  = repo_root / "trainLabels.csv"
+    default_model   = repo_root / "ml" / "deploy" / "models" / "netrapulse_resnet50.onnx"
 
-    parser = argparse.ArgumentParser(description="Evaluate NetraPulse on APTOS held-out split.")
-    parser.add_argument("--data", type=Path, default=default_data)
-    parser.add_argument("--model", type=Path, default=default_model)
-    parser.add_argument("--split", type=float, default=0.2, help="Fraction for validation")
-    parser.add_argument("--experiment", default="netrapulse", help="MLflow experiment name")
+    parser = argparse.ArgumentParser(description="Evaluate NetraPulse on held-out split.")
+    parser.add_argument("--data",    type=Path, default=default_data,
+                        help="Folder of images (default: resized_train_cropped)")
+    parser.add_argument("--labels",  type=Path, default=default_labels,
+                        help="Labels CSV (default: trainLabels.csv)")
+    parser.add_argument("--model",   type=Path, default=default_model)
+    parser.add_argument("--split",   type=float, default=0.2, help="Validation fraction")
+    parser.add_argument("--experiment", default="netrapulse")
     args = parser.parse_args()
 
-    evaluate(args.data, args.model, split=args.split, experiment_name=args.experiment)
+    evaluate(args.data, args.labels, args.model, split=args.split, experiment_name=args.experiment)
 
 
 if __name__ == "__main__":

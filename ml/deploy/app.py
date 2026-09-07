@@ -24,6 +24,11 @@ Then open: http://localhost:8000/docs
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+# Add the project root to sys.path so 'import ml...' works from anywhere
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
 import base64
 import io
 import logging
@@ -57,7 +62,7 @@ DR_GRADE_LABELS = {
     3: "Severe",
     4: "Proliferative DR",
 }
-IMG_SIZE = 512
+IMG_SIZE = 224
 
 # ---------------------------------------------------------------------------
 # App

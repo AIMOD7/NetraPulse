@@ -1,17 +1,21 @@
 @import "tailwindcss";
 
 :root {
-  --bg-primary: #0a0f1e;
-  --bg-card: #0f172a;
-  --bg-card-hover: #1e293b;
-  --border: #1e3a5f;
-  --accent: #3b82f6;
-  --accent-glow: #60a5fa;
-  --text-primary: #f1f5f9;
-  --text-muted: #94a3b8;
-  --success: #10b981;
-  --warning: #f59e0b;
-  --danger: #ef4444;
+  --bg-primary: #f8f9fa;
+  --bg-card: #ffffff;
+  --border: #dadce0;
+  --accent: #1a73e8;
+  --text-primary: #202124;
+  --text-muted: #5f6368;
+}
+
+.dark {
+  --bg-primary: #202124;
+  --bg-card: #292a2d;
+  --border: #3c4043;
+  --accent: #8ab4f8;
+  --text-primary: #e8eaed;
+  --text-muted: #9aa0a6;
 }
 
 * {
@@ -25,63 +29,48 @@ body {
   min-height: 100vh;
 }
 
-/* Animated gradient background */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background: radial-gradient(ellipse at 20% 20%, rgba(59, 130, 246, 0.06) 0%, transparent 60%),
-              radial-gradient(ellipse at 80% 80%, rgba(16, 185, 129, 0.04) 0%, transparent 60%);
-  pointer-events: none;
-  z-index: 0;
+.google-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+  transition: box-shadow 0.2s ease-in-out;
 }
 
-.glass-card {
-  background: rgba(15, 23, 42, 0.8);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(30, 58, 95, 0.6);
-  border-radius: 16px;
+.google-card:hover {
+  box-shadow: 0 1px 3px 0 rgba(60,64,67,0.3), 0 4px 8px 3px rgba(60,64,67,0.15);
 }
 
 .drop-zone {
-  border: 2px dashed rgba(59, 130, 246, 0.4);
+  border: 1px dashed var(--border);
   border-radius: 12px;
   transition: all 0.2s ease;
   cursor: pointer;
+  background: #f8f9fa;
 }
 
 .drop-zone:hover,
 .drop-zone.active {
-  border-color: rgba(59, 130, 246, 0.9);
-  background: rgba(59, 130, 246, 0.05);
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.15);
+  border-color: var(--accent);
+  background: #e8f0fe;
 }
 
 .grade-badge {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 16px;
-  border-radius: 999px;
-  font-weight: 700;
-  font-size: 0.95rem;
-  letter-spacing: 0.02em;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-weight: 500;
+  font-size: 0.875rem;
+  letter-spacing: 0.01em;
 }
 
-.grade-0 { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
-.grade-1 { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); }
-.grade-2 { background: rgba(249, 115, 22, 0.15); color: #f97316; border: 1px solid rgba(249, 115, 22, 0.3); }
-.grade-3 { background: rgba(239, 68, 68, 0.15);  color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
-.grade-4 { background: rgba(139, 92, 246, 0.15); color: #a78bfa; border: 1px solid rgba(139, 92, 246, 0.3); }
-
-.pulse-ring {
-  animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-@keyframes pulse-ring {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
+.grade-0 { background: #e6f4ea; color: #137333; }
+.grade-1 { background: #fef7e0; color: #b06000; }
+.grade-2 { background: #fce8e6; color: #c5221f; }
+.grade-3 { background: #fce8e6; color: #b31412; }
+.grade-4 { background: #f3e8fd; color: #8430ce; }
 
 .fade-in {
   animation: fade-in 0.4s ease forwards;
