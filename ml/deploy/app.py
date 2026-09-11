@@ -133,14 +133,51 @@ def get_pytorch_model():
 # Preprocessing helper
 # ---------------------------------------------------------------------------
 
+def _crop_to_content(img: np.ndarray, tol: int = 7) -> np.ndarray:
+    """Crop the image to its non-black bounding box."""
+    gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+    mask = gray > tol
+    if mask.sum() == 0:
+        return img
+    coords = np.argwhere(mask)
+    y0, x0 = coords.min(axis=0)
+    y1, x1 = coords.max(axis=0) + 1
+    return img[y0:y1, x0:x1]
+
+
+def preprocess_fundus(
+    image_bgr: np.ndarray,
+    img_size: int = IMG_SIZE,
+    sigma: float = 10,
+) -> np.ndarray:
+    """Canonical fundus preprocessing with Ben Graham local-contrast normalization."""
+    img = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+    img = _crop_to_content(img)
+    img = cv2.resize(img, (img_size, img_size))
+
+    # Circular mask — drop corners outside the retinal disc
+    h, w = img.shape[:2]
+    mask = np.zeros((h, w), dtype=np.uint8)
+    cv2.circle(mask, (w // 2, h // 2), min(h, w) // 2, 1, thickness=-1)
+    img = cv2.bitwise_and(img, img, mask=mask)
+
+    # Ben Graham local-contrast normalization
+    blurred = cv2.GaussianBlur(img, (0, 0), sigma)
+    img = cv2.addWeighted(img, 4, blurred, -4, 128)
+    return img
+
+
 def _load_and_preprocess(file_bytes: bytes) -> np.ndarray:
     """Decode uploaded image bytes and apply canonical preprocessing."""
-    from ml.data.preprocessing import preprocess_fundus
+    try:
+        from ml.data.preprocessing import preprocess_fundus as _prep
+    except ImportError:
+        _prep = preprocess_fundus
 
     pil_img = Image.open(io.BytesIO(file_bytes)).convert("RGB")
     img_rgb = np.array(pil_img)
     img_bgr = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2BGR)
-    return preprocess_fundus(img_bgr, img_size=IMG_SIZE)
+    return _prep(img_bgr, img_size=IMG_SIZE)
 
 
 def _to_onnx_tensor(processed: np.ndarray) -> np.ndarray:
