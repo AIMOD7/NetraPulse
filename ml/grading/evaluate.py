@@ -74,10 +74,15 @@ def predict_single(session, image_bgr: np.ndarray) -> tuple[int, list[float]]:
 
     inp_name = session.get_inputs()[0].name
     outputs = session.run(None, {inp_name: tensor})
-    logits = outputs[0][0]
+    raw_out = outputs[0][0]
 
-    exp = np.exp(logits - np.max(logits))
-    confidence = (exp / exp.sum()).tolist()
+    # Check if ONNX model output is already softmax probabilities (sums to ~1.0, all >= 0)
+    if np.isclose(float(np.sum(raw_out)), 1.0, atol=1e-2) and np.all(raw_out >= 0):
+        confidence = [round(float(p), 4) for p in raw_out]
+    else:
+        exp = np.exp(raw_out - np.max(raw_out))
+        confidence = [round(float(p), 4) for p in (exp / exp.sum())]
+
     grade = int(np.argmax(confidence))
     return grade, confidence
 

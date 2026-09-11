@@ -32,6 +32,11 @@ interface PredictResponse {
   grade: number;
   label: string;
   confidence: number[];
+  quality?: {
+    is_gradable: boolean;
+    quality_score: number;
+    issues: string[];
+  };
 }
 
 interface ExplainResponse {
@@ -164,6 +169,9 @@ export default function HomePage() {
 
     const form = new FormData();
     form.append("file", selectedFile);
+    if (prediction) {
+      form.append("target_grade", prediction.grade.toString());
+    }
 
     try {
       const res = await fetch(`${API_BASE}/explain`, {
@@ -328,12 +336,26 @@ export default function HomePage() {
                     Grade {prediction.grade} — {prediction.label}
                   </span>
                 </div>
-                <div className="sm:ml-8">
+                <div className="sm:ml-8 flex-1">
                   <p className="text-[var(--text-muted)] text-xs uppercase tracking-wider mb-1 font-semibold">Clinical note</p>
                   <p className="text-[var(--text-primary)] opacity-90 text-sm">
                     {GRADE_DESCRIPTIONS[prediction.grade]}
                   </p>
                 </div>
+                {prediction.quality && (
+                  <div className="sm:ml-auto border-t sm:border-t-0 sm:border-l border-[var(--border)] pt-3 sm:pt-0 sm:pl-6">
+                    <p className="text-[var(--text-muted)] text-xs uppercase tracking-wider mb-1 font-semibold">Image Quality</p>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
+                        prediction.quality.is_gradable 
+                          ? "bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20" 
+                          : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
+                      }`}>
+                        {prediction.quality.is_gradable ? "Gradable" : "Suboptimal"} ({(prediction.quality.quality_score * 100).toFixed(0)}%)
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

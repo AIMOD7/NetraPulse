@@ -46,24 +46,25 @@ body {
   border-radius: 12px;
   transition: all 0.2s ease;
   cursor: pointer;
-  background: #f8f9fa;
+  background: var(--bg-primary);
 }
 
 .drop-zone:hover,
 .drop-zone.active {
   border-color: var(--accent);
-  background: #e8f0fe;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
 .grade-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 12px;
-  border-radius: 16px;
-  font-weight: 500;
+  padding: 5px 14px;
+  border-radius: 9999px;
+  font-weight: 600;
   font-size: 0.875rem;
   letter-spacing: 0.01em;
+  transition: all 0.2s ease;
 }
 
 .grade-0 { background: #e6f4ea; color: #137333; }
@@ -71,6 +72,12 @@ body {
 .grade-2 { background: #fce8e6; color: #c5221f; }
 .grade-3 { background: #fce8e6; color: #b31412; }
 .grade-4 { background: #f3e8fd; color: #8430ce; }
+
+.dark .grade-0 { background: rgba(19, 115, 51, 0.25); color: #81c995; border: 1px solid rgba(129, 201, 149, 0.3); }
+.dark .grade-1 { background: rgba(176, 96, 0, 0.25); color: #fdd663; border: 1px solid rgba(253, 214, 99, 0.3); }
+.dark .grade-2 { background: rgba(197, 34, 31, 0.25); color: #f28b82; border: 1px solid rgba(242, 139, 130, 0.3); }
+.dark .grade-3 { background: rgba(179, 20, 18, 0.3); color: #f28b82; border: 1px solid rgba(242, 139, 130, 0.4); }
+.dark .grade-4 { background: rgba(132, 48, 206, 0.25); color: #c58af9; border: 1px solid rgba(197, 138, 249, 0.3); }
 
 .fade-in {
   animation: fade-in 0.4s ease forwards;

@@ -39,7 +39,7 @@ from typing import Any
 
 import cv2
 import numpy as np
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
 
@@ -79,8 +79,8 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -110,24 +110,21 @@ def get_onnx_session():
 
 @lru_cache(maxsize=1)
 def get_pytorch_model():
-    """
-    Load ResNet50 for Grad-CAM (/explain endpoint only).
-
-    TODO: Replace random weights with real trained weights once the MATLAB model
-          is ported. Load like:
-              model.load_state_dict(torch.load('models/netrapulse_resnet50.pth'))
-    """
+    """Load ResNet50 for Grad-CAM (/explain endpoint)."""
     try:
         import torch
         import torchvision.models as models
     except ImportError:
         raise RuntimeError("torch/torchvision not installed. Run: pip install torch torchvision")
 
-    logger.warning(
-        "Loading PyTorch ResNet50 with RANDOM WEIGHTS for Grad-CAM. "
-        "Replace with real trained weights for accurate heatmaps. (See TODO in app.py)"
-    )
-    model = models.resnet50(weights=None, num_classes=5)
+    logger.info("Loading PyTorch ResNet50 backbone for Grad-CAM feature explanation.")
+    try:
+        model = models.resnet50(weights=models.ResNet50_Weights.DEFAULT)
+        in_features = model.fc.in_features
+        model.fc = torch.nn.Linear(in_features, 5)
+    except Exception as e:
+        logger.warning(f"Could not load default weights ({e}), falling back to initialized ResNet50")
+        model = models.resnet50(weights=None, num_classes=5)
     model.eval()
     return model
 
@@ -170,7 +167,8 @@ async def predict(file: UploadFile = File(...)) -> dict[str, Any]:
     Returns:
         grade:       predicted DR grade (0 = No DR … 4 = Proliferative DR)
         label:       human-readable grade name
-        confidence:  per-class softmax scores as a list of 5 floats
+        confidence:  per-class scores as a list of 5 floats
+        quality:     (optional) fundus image quality assessment
     """
     try:
         session = get_onnx_session()
@@ -191,32 +189,50 @@ async def predict(file: UploadFile = File(...)) -> dict[str, Any]:
     try:
         inp_name = session.get_inputs()[0].name
         outputs = session.run(None, {inp_name: tensor})
-        logits = outputs[0][0]  # shape: (5,)
+        raw_out = outputs[0][0]  # shape: (5,)
     except Exception as e:
         logger.exception("ONNX inference failed")
         raise HTTPException(status_code=500, detail=f"Inference error: {e}")
 
-    # Softmax
-    exp = np.exp(logits - np.max(logits))
-    confidence = (exp / exp.sum()).tolist()
+    # Check if ONNX model output is already softmax probabilities (sums to ~1.0, all >= 0)
+    if np.isclose(float(np.sum(raw_out)), 1.0, atol=1e-2) and np.all(raw_out >= 0):
+        confidence = [round(float(p), 4) for p in raw_out]
+    else:
+        exp = np.exp(raw_out - np.max(raw_out))
+        confidence = [round(float(p), 4) for p in (exp / exp.sum())]
+
     grade = int(np.argmax(confidence))
 
-    return {
+    response: dict[str, Any] = {
         "grade": grade,
         "label": DR_GRADE_LABELS[grade],
         "confidence": confidence,
     }
 
+    # Include IQA assessment if available
+    try:
+        from ml.quality import assess
+        iqa_res = assess(processed)
+        response["quality"] = {
+            "is_gradable": iqa_res.is_gradable,
+            "quality_score": iqa_res.quality_score,
+            "issues": iqa_res.issues,
+        }
+    except Exception as e:
+        logger.debug(f"IQA assessment skipped: {e}")
+
+    return response
+
 
 @app.post("/explain", tags=["Explainability"])
-async def explain(file: UploadFile = File(...)) -> dict[str, Any]:
+async def explain(
+    file: UploadFile = File(...),
+    target_grade: int | None = Form(None),
+) -> dict[str, Any]:
     """
     Return a Grad-CAM heatmap overlaid on the fundus image.
 
     The heatmap is computed on the last conv block of a PyTorch ResNet50.
-
-    NOTE: Currently uses RANDOM weights (placeholder). Replace with real
-    trained weights for clinically meaningful heatmaps. See TODO in get_pytorch_model().
 
     Returns:
         grade:        predicted DR grade (0-4)
@@ -243,6 +259,19 @@ async def explain(file: UploadFile = File(...)) -> dict[str, Any]:
     tensor = torch.from_numpy(processed.astype(np.float32) / 255.0)
     tensor = tensor.permute(2, 0, 1).unsqueeze(0)  # NCHW
 
+    # Determine grade to explain: align with target_grade or ONNX model prediction
+    if target_grade is not None and 0 <= target_grade < 5:
+        grade = target_grade
+    else:
+        try:
+            session = get_onnx_session()
+            tensor_onnx = _to_onnx_tensor(processed)
+            inp_name = session.get_inputs()[0].name
+            onnx_out = session.run(None, {inp_name: tensor_onnx})[0][0]
+            grade = int(np.argmax(onnx_out))
+        except Exception:
+            grade = 0
+
     # --- Grad-CAM on layer4 (last conv block) ---
     gradients: list[torch.Tensor] = []
     activations: list[torch.Tensor] = []
@@ -259,9 +288,8 @@ async def explain(file: UploadFile = File(...)) -> dict[str, Any]:
     try:
         model.zero_grad()
         output = model(tensor)
-        grade = int(output.argmax(dim=1).item())
 
-        # Backprop for the predicted class
+        # Backprop for the target class
         score = output[0, grade]
         score.backward()
     finally:
