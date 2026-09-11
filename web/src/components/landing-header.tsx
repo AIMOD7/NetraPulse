@@ -28,7 +28,7 @@ export function LandingHeader() {
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
-          ? "bg-[#08090c]/85 backdrop-blur-md border-b border-white/10 py-3.5 shadow-2xl"
+          ? "bg-[#071014]/75 backdrop-blur-xl border-b border-emerald-100/10 py-3.5 shadow-2xl"
           : "bg-transparent py-5"
       }`}
     >
@@ -42,7 +42,7 @@ export function LandingHeader() {
         </button>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-1.5 p-1 rounded-full bg-white/[0.04] border border-white/10 backdrop-blur-md">
+        <nav className="hidden items-center gap-1 rounded-full border border-emerald-100/10 bg-white/[0.045] p-1 backdrop-blur-xl md:flex">
           <button
             onClick={() => scrollTo("hero")}
             className="px-4 py-1.5 text-xs font-medium text-slate-300 hover:text-white hover:bg-white/10 rounded-full transition-colors"

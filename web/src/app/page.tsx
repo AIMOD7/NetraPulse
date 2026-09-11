@@ -283,7 +283,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#08090c] text-white selection:bg-[#0ae448] selection:text-black">
+    <div className="min-h-screen text-white">
       {/* Header Navigation */}
       <LandingHeader />
 
@@ -296,7 +296,7 @@ export default function HomePage() {
         className="relative min-h-screen flex flex-col items-center justify-center pt-24 pb-16 px-4 sm:px-6 lg:px-8 text-center overflow-hidden"
       >
         {/* Background Ambient Aura */}
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] bg-gradient-to-tr from-[#0ae448]/15 via-[#00bae2]/10 to-transparent blur-[120px] pointer-events-none rounded-full" />
+        <div className="pointer-events-none absolute left-1/2 top-1/3 h-[32rem] w-[42rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-300/10 blur-[120px]" />
 
         <div className="relative z-10 max-w-5xl mx-auto flex flex-col items-center">
           {/* Top Pill Badge */}
@@ -306,7 +306,7 @@ export default function HomePage() {
           </div>
 
           {/* Large Animated Logo */}
-          <div className="hero-anim hero-flair mb-6 p-4 rounded-3xl bg-white/[0.02] border border-white/10 shadow-[0_0_50px_-10px_rgba(10,228,72,0.2)]">
+          <div className="hero-anim hero-flair mb-7 rounded-[2rem] border border-emerald-200/15 bg-white/[0.045] p-5 shadow-[0_24px_80px_rgba(67,230,160,0.12)] backdrop-blur-xl">
             <NetraPulseLogo size={84} showText={false} />
           </div>
 
@@ -326,7 +326,7 @@ export default function HomePage() {
           <div className="hero-anim flex flex-wrap items-center justify-center gap-4 mb-12">
             <button
               onClick={() => scrollToSection("scanner")}
-              className="px-8 py-3.5 rounded-full font-bold text-sm text-black bg-[#0ae448] hover:bg-[#abff84] transition-all duration-300 shadow-[0_0_30px_0_rgba(10,228,72,0.4)] hover:shadow-[0_0_40px_0_rgba(10,228,72,0.7)] hover:scale-105 flex items-center gap-2 cursor-pointer"
+              className="flex cursor-pointer items-center gap-2 rounded-full bg-[#92f5c8] px-7 py-3.5 text-sm font-bold text-[#071014] shadow-[0_12px_40px_rgba(67,230,160,0.2)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_18px_55px_rgba(67,230,160,0.3)]"
             >
               Launch Live Scanner
               <ArrowRight className="w-4 h-4" />
@@ -400,7 +400,7 @@ export default function HomePage() {
       <section
         id="about"
         ref={aboutRef}
-        className="relative py-28 px-4 sm:px-6 lg:px-8 border-t border-white/5 bg-[#090b0f]"
+        className="relative border-t border-white/[0.07] px-4 py-28 sm:px-6 lg:px-8"
       >
         <div className="max-w-7xl mx-auto">
           {/* Section Header */}
@@ -557,7 +557,7 @@ export default function HomePage() {
       <section
         id="scanner"
         ref={scannerRef}
-        className="relative py-28 px-4 sm:px-6 lg:px-8 border-t border-white/5 bg-[#08090c]"
+        className="relative border-t border-white/[0.07] px-4 py-28 sm:px-6 lg:px-8"
       >
         <div className="max-w-7xl mx-auto">
           {/* Section Header */}
@@ -819,7 +819,7 @@ export default function HomePage() {
       <section
         id="contact"
         ref={contactRef}
-        className="relative py-28 px-4 sm:px-6 lg:px-8 border-t border-white/5 bg-[#090b0f]"
+        className="relative border-t border-white/[0.07] px-4 py-28 sm:px-6 lg:px-8"
       >
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
@@ -972,7 +972,7 @@ export default function HomePage() {
       {/* ===================================================================== */}
       {/* FOOTER                                                                */}
       {/* ===================================================================== */}
-      <footer className="py-12 px-4 sm:px-6 lg:px-8 border-t border-white/10 bg-[#06070a]">
+      <footer className="border-t border-white/[0.07] px-4 py-12 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-4">
             <NetraPulseLogo size={36} />
