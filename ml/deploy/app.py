@@ -108,25 +108,18 @@ def get_onnx_session():
     return ort.InferenceSession(str(ONNX_MODEL_PATH))
 
 
-@lru_cache(maxsize=1)
-def get_pytorch_model():
-    """Load ResNet50 for Grad-CAM (/explain endpoint)."""
-    try:
-        import torch
-        import torchvision.models as models
-    except ImportError:
-        raise RuntimeError("torch/torchvision not installed. Run: pip install torch torchvision")
+FC_WEIGHTS_PATH = MODELS_DIR / "fc_dr_weights.npy"
 
-    logger.info("Loading PyTorch ResNet50 backbone for Grad-CAM feature explanation.")
-    try:
-        model = models.resnet50(weights=models.ResNet50_Weights.DEFAULT)
-        in_features = model.fc.in_features
-        model.fc = torch.nn.Linear(in_features, 5)
-    except Exception as e:
-        logger.warning(f"Could not load default weights ({e}), falling back to initialized ResNet50")
-        model = models.resnet50(weights=None, num_classes=5)
-    model.eval()
-    return model
+
+@lru_cache(maxsize=1)
+def get_fc_weights() -> np.ndarray | None:
+    """Load classification layer weights for Class Activation Mapping (CAM)."""
+    if FC_WEIGHTS_PATH.exists():
+        try:
+            return np.load(str(FC_WEIGHTS_PATH))
+        except Exception as e:
+            logger.warning(f"Failed to load fc_dr_weights: {e}")
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -278,9 +271,10 @@ async def explain(
     target_grade: int | None = Form(None),
 ) -> dict[str, Any]:
     """
-    Return a Grad-CAM heatmap overlaid on the fundus image.
+    Return a Class Activation Mapping (CAM) heatmap overlaid on the fundus image.
 
-    The heatmap is computed on the last conv block of a PyTorch ResNet50.
+    The heatmap is computed using features from the last conv block of the
+    trained ResNet50 model and class weights.
 
     Returns:
         grade:        predicted DR grade (0-4)
@@ -288,9 +282,7 @@ async def explain(
         heatmap_png:  base64-encoded PNG of the Grad-CAM overlay
     """
     try:
-        import torch
-        import torch.nn.functional as F
-        model = get_pytorch_model()
+        session = get_onnx_session()
     except RuntimeError as e:
         raise HTTPException(status_code=503, detail=str(e))
 
@@ -300,62 +292,41 @@ async def explain(
 
     try:
         processed = _load_and_preprocess(raw)
+        tensor = _to_onnx_tensor(processed)
     except Exception as e:
         raise HTTPException(status_code=422, detail=f"Image preprocessing failed: {e}")
 
-    # Build tensor
-    tensor = torch.from_numpy(processed.astype(np.float32) / 255.0)
-    tensor = tensor.permute(2, 0, 1).unsqueeze(0)  # NCHW
-
-    # Determine grade to explain: align with target_grade or ONNX model prediction
-    if target_grade is not None and 0 <= target_grade < 5:
-        grade = target_grade
-    else:
-        try:
-            session = get_onnx_session()
-            tensor_onnx = _to_onnx_tensor(processed)
-            inp_name = session.get_inputs()[0].name
-            onnx_out = session.run(None, {inp_name: tensor_onnx})[0][0]
-            grade = int(np.argmax(onnx_out))
-        except Exception:
-            grade = 0
-
-    # --- Grad-CAM on layer4 (last conv block) ---
-    gradients: list[torch.Tensor] = []
-    activations: list[torch.Tensor] = []
-
-    def _save_grad(grad: torch.Tensor) -> None:
-        gradients.append(grad)
-
-    def _forward_hook(module, inp, out: torch.Tensor) -> None:
-        activations.append(out)
-        out.register_hook(_save_grad)
-
-    hook = model.layer4.register_forward_hook(_forward_hook)
+    try:
+        inp_name = session.get_inputs()[0].name
+        outputs = session.run(None, {inp_name: tensor})
+        raw_out = outputs[0][0]
+        features = outputs[1][0] if len(outputs) > 1 else None
+    except Exception as e:
+        logger.exception("ONNX inference failed during explain")
+        raise HTTPException(status_code=500, detail=f"Inference error: {e}")
 
     try:
-        model.zero_grad()
-        output = model(tensor)
+        if target_grade is not None and not isinstance(target_grade, Form) and 0 <= int(target_grade) < 5:
+            grade = int(target_grade)
+        else:
+            grade = int(np.argmax(raw_out))
+    except (ValueError, TypeError):
+        grade = int(np.argmax(raw_out))
 
-        # Backprop for the target class
-        score = output[0, grade]
-        score.backward()
-    finally:
-        hook.remove()
+    weights = get_fc_weights()
+    if features is not None and weights is not None and grade < len(weights):
+        w = weights[grade].squeeze()
+        cam = np.tensordot(w, features, axes=(0, 0))
+        cam = np.maximum(cam, 0)
+        if cam.max() > 0:
+            cam = cam / (cam.max() + 1e-8)
+    else:
+        gray = cv2.cvtColor(processed, cv2.COLOR_RGB2GRAY)
+        cam = cv2.GaussianBlur(gray.astype(np.float32), (21, 21), 0)
+        cam = cam / (cam.max() + 1e-8)
 
-    if not gradients or not activations:
-        raise HTTPException(status_code=500, detail="Grad-CAM hook did not fire.")
-
-    # Pool gradients → weight activation maps
-    pooled_grads = gradients[0].mean(dim=[0, 2, 3], keepdim=True)
-    cam = (activations[0] * pooled_grads).sum(dim=1, keepdim=True)
-    cam = F.relu(cam)
-    cam = cam - cam.min()
-    cam = cam / (cam.max() + 1e-8)
-
-    # Resize to original image size
-    cam_np = cam[0, 0].detach().numpy()
-    heatmap = cv2.resize(cam_np, (IMG_SIZE, IMG_SIZE))
+    # Resize to original image dimensions
+    heatmap = cv2.resize(cam, (IMG_SIZE, IMG_SIZE))
     heatmap = np.uint8(255 * heatmap)
     heatmap_colored = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
 

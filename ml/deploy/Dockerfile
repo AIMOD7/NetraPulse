@@ -13,9 +13,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
-# Install CPU-only torch & torchvision first (saves >1.5GB of disk)
-RUN pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu
-
 # Install deployment requirements
 COPY ml/deploy/requirements-deploy.txt /app/requirements-deploy.txt
 RUN pip install --no-cache-dir -r requirements-deploy.txt
