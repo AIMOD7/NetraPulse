@@ -1,21 +1,28 @@
 @import "tailwindcss";
 
 :root {
-  --bg-primary: #f8f9fa;
-  --bg-card: #ffffff;
-  --border: #dadce0;
-  --accent: #1a73e8;
-  --text-primary: #202124;
-  --text-muted: #5f6368;
+  --color-shockingly-green: #0ae448;
+  --color-lt-green: #abff84;
+  --color-blue: #00bae2;
+  --color-pink: #fec5fb;
+  --color-shockingly-pink: #f100cb;
+  --color-orangey: #ff8709;
+  --color-just-black: #08090c;
+  --color-off-black: #0f1117;
+  --color-card-bg: rgba(18, 22, 31, 0.7);
+  --color-border: rgba(255, 255, 255, 0.08);
+
+  --bg-primary: #08090c;
+  --bg-card: rgba(15, 18, 26, 0.85);
+  --border: rgba(255, 255, 255, 0.1);
+  --accent: #0ae448;
+  --text-primary: #f8fafc;
+  --text-muted: #94a3b8;
 }
 
-.dark {
-  --bg-primary: #202124;
-  --bg-card: #292a2d;
-  --border: #3c4043;
-  --accent: #8ab4f8;
-  --text-primary: #e8eaed;
-  --text-muted: #9aa0a6;
+html {
+  scroll-behavior: smooth;
+  color-scheme: dark;
 }
 
 * {
@@ -23,67 +30,138 @@
 }
 
 body {
-  background: var(--bg-primary);
+  background-color: var(--bg-primary);
   color: var(--text-primary);
-  font-family: "Inter", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
   min-height: 100vh;
+  overflow-x: hidden;
+  background-image: 
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(10, 228, 72, 0.12), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 85% 60%, rgba(0, 186, 226, 0.08), transparent 60%),
+    radial-gradient(ellipse 50% 50% at 10% 40%, rgba(241, 0, 203, 0.05), transparent 50%);
+  background-attachment: fixed;
 }
 
-.google-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
-  transition: box-shadow 0.2s ease-in-out;
+/* GSAP-Style Gradient Typography */
+.text-gradient-green {
+  background: linear-gradient(135deg, #0ae448 0%, #abff84 50%, #00bae2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-.google-card:hover {
-  box-shadow: 0 1px 3px 0 rgba(60,64,67,0.3), 0 4px 8px 3px rgba(60,64,67,0.15);
+.text-gradient-blue {
+  background: linear-gradient(135deg, #00bae2 0%, #38bdf8 50%, #9d95ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
+.text-gradient-pink {
+  background: linear-gradient(135deg, #fec5fb 0%, #ff4db8 50%, #ff8709 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Glassmorphic Panels & Glows */
+.glass-panel {
+  background: rgba(15, 19, 28, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6);
+}
+
+.glass-panel-interactive {
+  background: rgba(18, 23, 34, 0.6);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-panel-interactive:hover {
+  background: rgba(22, 29, 44, 0.85);
+  border-color: rgba(10, 228, 72, 0.35);
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px -10px rgba(10, 228, 72, 0.15);
+}
+
+/* Animated Scroll-Down Indicator */
+@keyframes scroll-pulse {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(10px);
+    opacity: 0.3;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.scroll-indicator-wheel {
+  animation: scroll-pulse 2s infinite ease-in-out;
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-8px) rotate(1deg); }
+}
+
+.animate-float {
+  animation: float-slow 6s ease-in-out infinite;
+}
+
+/* Drop Zone for Medical Imaging */
 .drop-zone {
-  border: 1px dashed var(--border);
-  border-radius: 12px;
-  transition: all 0.2s ease;
+  border: 1.5px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  transition: all 0.25s ease;
   cursor: pointer;
-  background: var(--bg-primary);
+  background: rgba(15, 20, 30, 0.4);
 }
 
 .drop-zone:hover,
 .drop-zone.active {
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border-color: #0ae448;
+  background: rgba(10, 228, 72, 0.06);
+  box-shadow: 0 0 25px -5px rgba(10, 228, 72, 0.2);
 }
 
+/* Diabetic Retinopathy Clinical Badges */
 .grade-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 14px;
+  padding: 6px 16px;
   border-radius: 9999px;
   font-weight: 600;
   font-size: 0.875rem;
-  letter-spacing: 0.01em;
-  transition: all 0.2s ease;
+  letter-spacing: 0.02em;
 }
 
-.grade-0 { background: #e6f4ea; color: #137333; }
-.grade-1 { background: #fef7e0; color: #b06000; }
-.grade-2 { background: #fce8e6; color: #c5221f; }
-.grade-3 { background: #fce8e6; color: #b31412; }
-.grade-4 { background: #f3e8fd; color: #8430ce; }
+.grade-0 { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+.grade-1 { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+.grade-2 { background: rgba(249, 115, 22, 0.15); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.3); }
+.grade-3 { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.35); }
+.grade-4 { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.35); }
 
-.dark .grade-0 { background: rgba(19, 115, 51, 0.25); color: #81c995; border: 1px solid rgba(129, 201, 149, 0.3); }
-.dark .grade-1 { background: rgba(176, 96, 0, 0.25); color: #fdd663; border: 1px solid rgba(253, 214, 99, 0.3); }
-.dark .grade-2 { background: rgba(197, 34, 31, 0.25); color: #f28b82; border: 1px solid rgba(242, 139, 130, 0.3); }
-.dark .grade-3 { background: rgba(179, 20, 18, 0.3); color: #f28b82; border: 1px solid rgba(242, 139, 130, 0.4); }
-.dark .grade-4 { background: rgba(132, 48, 206, 0.25); color: #c58af9; border: 1px solid rgba(197, 138, 249, 0.3); }
-
-.fade-in {
-  animation: fade-in 0.4s ease forwards;
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+::-webkit-scrollbar-track {
+  background: #08090c;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #0ae448;
 }
