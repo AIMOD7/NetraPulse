@@ -15,8 +15,9 @@ dist/
 build/
 .env
 
-# ONNX model weights — too large for git
+# ONNX model weights (whitelist production model under 100MB for cloud deployment)
 ml/deploy/models/*.onnx
+!ml/deploy/models/netrapulse_resnet50.onnx
 
 # Next.js
 web/.next/

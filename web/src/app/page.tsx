@@ -48,7 +48,7 @@ interface ExplainResponse {
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-const API_BASE = "http://localhost:8000";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
 
 const GRADE_LABELS = ["No DR", "Mild", "Moderate", "Severe", "Proliferative DR"];
 
@@ -154,7 +154,7 @@ export default function HomePage() {
     } catch (err: any) {
       setError(
         err.message?.includes("fetch")
-          ? "Could not connect to FastAPI at localhost:8000. Is the server running?"
+          ? `Could not connect to the API at ${API_BASE}. Is the server running?`
           : err.message ?? "Unknown error"
       );
     } finally {

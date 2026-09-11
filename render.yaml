@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: netrapulse-api
+    runtime: docker
+    dockerfilePath: ml/deploy/Dockerfile
+    dockerContext: .
+    plan: free
+    region: oregon
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: 8000
