@@ -154,6 +154,17 @@ def _to_onnx_tensor(processed: np.ndarray) -> np.ndarray:
 # Endpoints
 # ---------------------------------------------------------------------------
 
+@app.get("/", tags=["Meta"])
+def root() -> dict[str, Any]:
+    return {
+        "status": "ok",
+        "service": "NetraPulse API",
+        "version": "0.1.0",
+        "docs": "/docs",
+        "health": "/health",
+    }
+
+
 @app.get("/health", tags=["Meta"])
 def health() -> dict[str, str]:
     return {"status": "ok", "model": "netrapulse_resnet50"}
