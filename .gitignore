@@ -1,5 +1,7 @@
 # Datasets — tracked by DVC, not git
-data/
+/data/
+!ml/data/
+!ml/data/**
 resized_train_cropped/
 *.csv
 *.dvc
